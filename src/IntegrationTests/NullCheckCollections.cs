@@ -9,7 +9,43 @@ using System.Collections.Generic;
 namespace AutoMapper.IntegrationTests
 {
     using UnitTests;
-
+    public class NullCheckCollectionsFirstOrDefault : AutoMapperSpecBase
+    {
+        public class SourceType
+        {
+            public int Id { get; set; }
+            public ICollection<Parameter> Parameters { get; set; } = new List<Parameter>();
+        }
+        public class Parameter
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public int Value { get; set; }
+        }
+        public class DestinationType
+        {
+            public int? Index { get; set; }
+        }
+        class Initializer : DropCreateDatabaseAlways<TestContext>
+        {
+            protected override void Seed(TestContext context) => context.SourceTypes.Add(new SourceType { Parameters = { new Parameter { Name = "Index", Value = 101 } } });
+        }
+        class TestContext : DbContext
+        {
+            protected override void OnModelCreating(DbModelBuilder modelBuilder) => Database.SetInitializer(new Initializer());
+            public DbSet<SourceType> SourceTypes { get; set; }
+        }
+        protected override MapperConfiguration Configuration => new MapperConfiguration(cfg =>
+            cfg.CreateMap<SourceType, DestinationType>().ForMember(d => d.Index, o => o.MapFrom(source => source.Parameters.FirstOrDefault(p => p.Name == "Index").Value)));
+        [Fact]
+        public void Should_project_ok()
+        {
+            using (var context = new TestContext())
+            {
+                ProjectTo<DestinationType>(context.SourceTypes).Single().Index.ShouldBe(101);
+            }
+        }
+    }
     public class NullCheckCollections : AutoMapperSpecBase
     {
         public class Student

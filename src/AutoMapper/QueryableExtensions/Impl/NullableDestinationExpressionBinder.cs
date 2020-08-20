@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using static System.Linq.Expressions.Expression;
-using AutoMapper.Configuration;
 using AutoMapper.Internal;
 
 namespace AutoMapper.QueryableExtensions.Impl
@@ -22,7 +21,7 @@ namespace AutoMapper.QueryableExtensions.Impl
             var expressionToBind =
                 result.ResolutionExpression.GetMemberExpressions().Reverse().Aggregate(
                     ExpressionFactory.ToType(result.ResolutionExpression, destinationType),
-                    (accumulator, current) => current.IfNullElse(Constant(null, destinationType), accumulator));
+                    (accumulator, current) => current.Type.IsNonStringEnumerable() ? accumulator : current.IfNullElse(Constant(null, destinationType), accumulator));
             return Bind(propertyMap.DestinationMember, expressionToBind);
         }
     }
